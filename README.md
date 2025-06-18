@@ -1,80 +1,42 @@
-# CST8919 Lab 2: Building a Web App with Threat Detection using Azure Monitor and KQL
+# Flask Login Monitor App with Azure Log Analytics
 
+## Overview
+This project implements a Flask-based login monitoring web application, deployed to Azure App Service using Local Git. It integrates with Azure Log Analytics to collect and analyze login attempts.
 
-## Objective
+## Deployment Steps
 
-In this lab, you will:
-- Create a simple Demo Python Flask app
-- Deploy a the app to Azure App Service
-- Enable diagnostic logging with Azure Monitor
-- Use Kusto Query Language (KQL) to analyze logs
-- Create an alert rule to detect suspicious activity and send it to your email
----
-## Scenario
-As a cloud security engineer, you're tasked with securing a simple web application. The app logs login attempts. You must detect brute-force login behavior and configure an automatic alert when it occurs.
+1. **Azure Resources Setup**
+   - Created a resource group `myRG` in Canada Central.
+   - Provisioned an App Service Plan `myPlan` using `B1` SKU.
+   - Created the Web App `flask-login-akshay1025` with Python 3.10 runtime.
+   - Enabled Local Git deployment and configured `gunicorn app:app` as the startup command.
 
-## Tasks
+2. **Application Deployment**
+   - Cloned the GitHub repository.
+   - Updated and pushed code to Azure using Git.
+   - Verified deployment via `curl` POST request:
+     ```bash
+     curl -X POST https://flask-login-akshay1025.azurewebsites.net/login \
+       -H "Content-Type: application/json" \
+       -d '{"username":"admin", "password":"password123"}'
+     ```
 
-### Part 1: Deploy the Flask App to Azure
-1. Develop a Python Flask app with a `/login` route that logs both successful and failed login attempts.
-2. Deploy the app using **Azure Web App**.
+3. **Log Analytics Integration**
+   - Created a Log Analytics workspace:  
+     `DefaultWorkspace-7fac140a-6f9a-437a-80a4-2f4537b0274c-CCAN`
+   - Connected the web app’s diagnostic logs (`AppServiceHTTPLogs`) to the workspace using:
+     ```bash
+     az monitor diagnostic-settings create ...
+     ```
 
-### Part 2: Enable Monitoring
-1. Create a **Log Analytics Workspace** in the same region.
-2. In your Web App, go to **Monitoring > Diagnostic settings**:
-   - Enable:
-     - `AppServiceConsoleLogs`
-     - `AppServiceHTTPLogs` (optional)
-   - Send to the Log Analytics workspace.
-3. Interact with the app to generate logs (e.g., failed `/login` attempts).
+4. **Log Query Execution**
+   - Queried failed login attempts using Azure CLI:
+     ```bash
+     az monitor log-analytics query \
+       --workspace <workspace-id> \
+       --analytics-query "AppServiceAppLogs | where Message has 'Failed login attempt' | project TimeGenerated, Message" \
+       --output table
+     ```
 
-
-You must test your app using a .http file (compatible with VS Code + REST Client) and include that file in your GitHub repo as test-app.http.
-
-### Part 3: Query Logs with KQL
-1. Create a KQL query to find failed login attempts.
-2. Test it
-
-### Part 4: Create an Alert Rule
-1. Go to Azure Monitor > Alerts > + Create > Alert Rule.
-2. Scope: Select your Log Analytics Workspace.
-3. Condition: Use the query you created in the last step.
-4. Set:
-    - Measure: Table rows
-    - Threshold: Greater than 5
-    - Aggregation granularity: 5 minutes
-    - Frequency of evaluation: 1 minute
-    - Add an Action Group to send an email notification.
-    - Name the rule and set Severity (2 or 3).
-    - Save the alert.
-
-## Submission
-### GitHub Repository
-- Initialize a Git repository for your project.
-- Make **frequent commits** with meaningful commit messages.
-- Push your code to a **public GitHub repository**.
-- Include  **YouTube demo link in the README.md**.
-
-Include a `README.md` with:
-  - Briefly describe what you learned during this lab, challenges you faced, and how you’d improve the detection logic in a real-world scenario.
-  - Your KQL query with explanation
-
-- **A link to a 5-minute YouTube video demo** showing:
-  - App deployed
-  - Log generation and inspection in Azure Monitor
-  - KQL query usage
-  - Alert configuration and triggering
-
-You must test your app using a .http file (compatible with VS Code + REST Client) and include that file in your GitHub repo as test-app.http.
-
-
----
-
-## Submission Instructions
-
-Submit your **GitHub repository link** via Brightspace.
-
-**Deadline**: Wednesday, 18 June 2025
-
----
-
+## Outcome
+Deployment and integration were successful. Diagnostic settings are active, and logs are queryable via Azure Monitor for audit and analysis purposes.
